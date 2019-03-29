@@ -30,7 +30,7 @@ Iker García Ferrero - ikergarcia1996
 Toda ayuda es bienvenida, si quieres aportar al proyecto te animo a hacerlo, ya sea haciendo un pull request con código que hayas implementado como aportando ideas para mejorar el algoritmo!!!
 
 # ¿Qué hay en este directorio?
-QuestionCluster.ipynb: Jupyter Notebook con los algoritmos para clasificar preguntas y descargar preguntas desde un chat de youtube.
+* QuestionCluster.ipynb: Jupyter Notebook con los algoritmos para clasificar preguntas y descargar preguntas desde un chat de youtube.
 * embedding.py: Código python3 que se encarga de cargar word embeddings y manipularlos (por ejemplo incluye funciones como word_to_vector que dada una palabra devuelve el vector que la representa)
 * vocabulary.py: Gestor del vocabulario de un word embeddings, es una dependencia de embedding.py
 * utils.py: Algunas funciones útiles para diferentes tareas, es una dependencia de embedding.py
