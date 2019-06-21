@@ -2,6 +2,10 @@
 
 El objetivo de este proyecto es implementar un algoritmo no supervisado capaz de agrupar preguntas, permitiendo así, dadas un gran número de preguntas, detectar cuales son similares entre ellas. De esta forma, podríamos saber cuales son las preguntas más recurrentes, los temas de interés más relevantes... de un grupo de usuarios. Cree este proyecto por que pensé que sera muy útil para los streaming que realizó en la plataforma youtube donde mis seguidores pueden preguntar sus dudas, en ocasiones en número de preguntas es tan alto que es imposible responder a todas, sin embargo, muchas de las preguntas se repiten constantemente, por lo que esta aplicación podrá ser extremadamente útil. 
 
+
+README OBSOLETO, SE ACTUALIZARÁ A LA VERSIÓN 2.0 CUANDO TENGA TIEMPO. MIENTRAS TANTO AQUÍ ESTÁ EXPLICADO TODO LO QUE HE HECHO Y LOS RESULTADOS OBTENIDOS (https://github.com/ikergarcia1996/QuestionClustering/releases/download/2.0/Measuring_Question_Similarity_GitHub.pdf)
+
+
 # ¿Qué se ha hecho hasta ahora?
 
 Ahora mismo hay dos funciones principales que permiten extraer información de un grupo de preguntas:
