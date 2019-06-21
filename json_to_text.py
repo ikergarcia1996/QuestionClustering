@@ -4,12 +4,11 @@ import json
 import logging
 import datetime
 
-#Crea un archivo de texto con los json generador por https://github.com/fhamborg/news-please
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input_directory', required=True)
     parser.add_argument('-o', '--output_file', required=True)
-    parser.add_argument('-l', '--lower', action='store_true')
     args = parser.parse_args()
 
     with open(args.output_file, 'w') as out_file:
@@ -31,15 +30,13 @@ def main():
             try:
                 with open(filename) as json_file:
                     j = json.load(json_file)['text']
-                    if args.lower:
-                    	j=j.lower()
                     print(j, file=out_file)
                     total_words += len(j.split(' '))
             except:
                 logging.warning('Error in file: ' + str(filename) + ' skipping file.')
 
         string = '<' + str(
-            datetime.datetime.now()) + '>  ' + 'Generating corpus: 100% . Number of words int he corpus: ' + str(
+            datetime.datetime.now()) + '>  ' + 'Generating corpus: 100% . Number of words in the corpus: ' + str(
             total_words)
         print(string)
 

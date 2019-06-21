@@ -1,12 +1,15 @@
+from utils import isInt_float
 import numpy as np
 import regex
 from sklearn.preprocessing import normalize
+from num2words import num2words
 from vocabulary import Vocabulary
 import pandas as pd
 import logging
 import io
 import codecs
-from utils import get_dimensions
+from utils import get_dimensions, get_num_words
+import datetime
 
 class Embedding(object):
     vocabulary = Vocabulary()
@@ -98,7 +101,95 @@ class Embedding(object):
         else:
             return Embedding(vectors=self.vectors / norms, vocabulary=self.vocabulary)
 
+    def L1_rowwise(self, replace=True):
+        if replace:
+            normalize(self.vectors, norm='l1', axis=1, copy=False, return_norm=False)
 
+        else:
+            return Embedding(vectors=normalize(self.vectors, norm='l1', axis=1, copy=True, return_norm=True),
+                             vocabulary=self.vocabulary)
+
+    def L1_dimensionwwise(self, replace=True):
+        if replace:
+            normalize(self.vectors, norm='l1', axis=0, copy=False, return_norm=False)
+
+        else:
+            return Embedding(vectors=normalize(self.vectors, norm='l1', axis=0, copy=True, return_norm=True),
+                             vocabulary=self.vocabulary)
+
+    # [ES] Para cada columna resta la media de todas las columnas del embedding
+    # [ES] Si replace==True se sustituarian los vectores actuales por los vectores normalizados. En caso contrario, se devolverá un nuevo embedding con las mismas palabras que el actual pero los vectores normalizados.
+    def mean_center(self, replace=True):
+        avg = np.mean(self.vectors, axis=0)
+        if replace:
+            self.vectors = self.vectors - avg
+
+        else:
+            return Embedding(vectors=self.vectors - avg, vocabulary=self.vocabulary)
+
+    # [ES] Para cada fila resta la media de todas las filas del embedding
+    # [ES] Si replace==True se sustituarian los vectores actuales por los vectores normalizados. En caso contrario, se devolverá un nuevo embedding con las mismas palabras que el actual pero los vectores normalizados.
+    def mean_center_embeddingwise(self, replace=True):
+        avg = np.mean(self.vectors, axis=1)
+        if replace:
+            self.vectors = self.vectors - avg[:, np.newaxis]
+
+        else:
+            return Embedding(vectors=self.vectors - avg[:, np.newaxis], vocabulary=self.vocabulary)
+
+    # [ES] Exporta a ruta "path" el embedding actual. El formato será "dog -0.190911 -0.0466989 ... \n" si printHeader== True imprimirá al comienzo del fichero una linea que contiene el número de palabras del embedding y la longitud de los vectores del embedding
+    def export(self, path, printHeader=True):
+        words = self.words
+        vectors = self.vectors
+
+        with open(path, 'w+') as file:
+
+            if printHeader:
+                print('%d %d' % (len(self), self.dims), file=file)
+
+            for i in range(len(self)):
+                print(words[i] + ' ' + ' '.join(['%.6g' % x for x in vectors[i]]), file=file)
+
+    def save(self, file):
+        # @TODO cPickle
+        return
+
+    def sentence_to_vector(self, sentence, lower=True):
+        sentence = regex.sub(r'[^\w\s]', '', sentence)
+
+        s2 = ''
+        for w in sentence.split():
+            if isInt_float(w):
+                s2 = s2 + ' ' + num2words(int(w))
+            else:
+                s2 = s2 + ' ' + w
+
+        sentente = s2.strip()
+
+        if lower:
+            sentence = sentence.lower()
+
+        vector = np.zeros(self.dims)
+        num_words = 0
+
+        for w in sentence.split(' '):
+            try:
+                vector += self.word_to_vector(w)
+                num_words += 1
+            except KeyError as err:
+                continue
+
+        if num_words == 0:
+            logging.warning("Any word of the sentence found in the embedding. Sentence: " + str(sentence))
+            return None
+
+        else:
+            return vector / num_words
+
+    def most_frequent(self, k):
+        nvocabulary = self.words[:k]
+        nvectors = np.asarray([self.word_to_vector(w) for w in nvocabulary])
+        return Embedding(vectors=nvectors, vocabulary=Vocabulary(nvocabulary, False, False))
 
 
 # [ES] Carga un embedding desde un directorio, devuelve un objeto del tipo embedding.
@@ -175,12 +266,23 @@ def remove_duplicates(words, vectors):
 def from_TXT(path, vocabulary=None, dims_restriction=None):
     words = []
     vectors = []
-
+    num_words = get_num_words(path)
     # with codecs.open(path, "r",encoding='utf-8', errors='ignore') as f:
     with open(path) as f:
         if dims_restriction:
             next(f)
         for line_no, line in enumerate(f):
+
+            if line_no % 1000 == 0:
+                if num_words is not None:
+                    string = "<" + str(datetime.datetime.now()) + ">  " + 'Loading embedding ' + str(path) + ': ' + str(
+                        int(100 * ((line_no+1) / num_words))) + '%'
+                    print(string, end="\r")
+                else:
+                    string = "<" + str(datetime.datetime.now()) + ">  " + 'Loading embedding ' + str(path) + ': ' + str(
+                        int(line_no+1)) + ' words read'
+                    print(string, end="\r")
+
             l = line.split()
 
             if vocabulary is None:
@@ -213,6 +315,7 @@ def from_TXT(path, vocabulary=None, dims_restriction=None):
                     logging.warning(
                         "Line {}.Error reading the vector for the word {}... Word has been omitted".format(line_no,
                                                                                                            l[0:3]))
+    print()
 
     return words, vectors
 
@@ -232,6 +335,13 @@ def from_BIN(path, vocabulary=None):
 
         binary_len = np.dtype("float32").itemsize * layer1_size
         for line in range(vocab_size):
+
+            if line % 1000 == 0:
+                    string = "<" + str(datetime.datetime.now()) + ">  " + 'Loading embedding ' + str(path) + ': ' + str(
+                        int(100 * ((line+1) / vocab_size))) + '%'
+                    print(string, end="\r")
+
+
             word = []
             while True:
                 ch = file.read(1)
@@ -242,7 +352,7 @@ def from_BIN(path, vocabulary=None):
 
             if vocabulary is None:
 
-                words.append(b''.join(word).decode("latin-1"))
+                words.append(b''.join(word).decode('utf8'))
 
                 vectors[line, :] = np.fromstring(file.read(binary_len), dtype=np.float32)
 
